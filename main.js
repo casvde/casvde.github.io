@@ -129,7 +129,7 @@ async function loadBillboards() {
       ],
     },
     {
-      path: './images/Yote.png',
+      path: './images/yote.png',
       data: [
         { position: new THREE.Vector3(0.2, 0.03, -0.4), scale: 0.6, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
