@@ -111,49 +111,61 @@ function setupPostprocessing() {
 async function loadBillboards() {
   const billboardConfigs = [
     {
-      path: './images/WolfPilot.png',
+      path: './imagesTricky/WolfPilot.png',
       data: [
-        { position: new THREE.Vector3(1.1, -0.13, 1.93), scale: 0.63, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+        { position: new THREE.Vector3(1.1, -0.03, 1.3), scale: 0.53, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
     {
-      path: './images/cas.png',
+      path: './imagesTricky/cas.png',
       data: [
-        { position: new THREE.Vector3(1.5, -0.13, -1), scale: 0.8, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+        { position: new THREE.Vector3(1.2, 0.0, -1), scale: 0.8, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
     {
-      path: './images/LumiWhori2.png',
+      path: './imagesTricky/LumiWhori2.png',
       data: [
-        { position: new THREE.Vector3(0, -0.01, 0), scale: 1, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+        { position: new THREE.Vector3(0, 0.02, 0), scale: 0.9, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
     {
-      path: './images/yote.png',
+      path: './imagesTricky/yote.png',
       data: [
-        { position: new THREE.Vector3(0.2, 0.03, -0.4), scale: 0.6, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+        { position: new THREE.Vector3(0.3, 0.03, -0.6), scale: 0.6, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
     {
-      path: './images/Glexes.png',
+      path: './imagesTricky/Glexes.png',
       data: [
-        { position: new THREE.Vector3(1.8, -0.4, -1.4), scale: 0.6, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+        { position: new THREE.Vector3(1, 0.0, -0.8), scale: 0.3, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
       {
-      path: './images/melondragon.png',
+      path: './imagesTricky/melondragon.png',
       data: [
-        { position: new THREE.Vector3(-0.6, -0.02, -1.3), scale: 1, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+        { position: new THREE.Vector3(-0.6, -0.02, -1.3), scale: 0.8, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+      ],
+    },
+          {
+      path: './imagesTricky/nicole.png',
+      data: [
+        { position: new THREE.Vector3(0.6, 0.01, 0.6), scale: 1, rotationOptions: { x: 0.5, y: 1, z: 1 } },
+      ],
+    },
+          {
+      path: './imagesTricky/tox.png',
+      data: [
+        { position: new THREE.Vector3(0.4, 0, 1.4), scale: 0.7, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
     {
-      path: './images/tree.png',
+      path: './imagesTricky/tree.png',
       data: [
         { position: new THREE.Vector3(1, -0.01, 1.5), scale: 2.3, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
     },
     {
-      path: './images/shack.png',
+      path: './imagesTricky/shack.png',
       data: [
         { position: new THREE.Vector3(-0.3, -0.5, 1.2), scale: 2, rotationOptions: { x: 0.5, y: 1, z: 1 } },
       ],
@@ -181,10 +193,8 @@ document.body.addEventListener('click', () => {
 });
 
 
-let angle = 0;
 let radius = 4.2;
-let rotationSpeed = 0.0003;
-
+let rotationDuration = 90; 
 
 const clock = new THREE.Clock();
 
@@ -194,22 +204,18 @@ function animate() {
   const delta = clock.getDelta();
   scene.userData.animateWater?.(delta);
 
-  const elapsed = performance.now() / 1000;
+  const elapsed = clock.getElapsedTime(); 
 
+  const angle = (elapsed / rotationDuration) * Math.PI * 2;
 
-
-  angle += rotationSpeed;
   camera.position.x = radius * Math.cos(angle);
   camera.position.z = radius * Math.sin(angle);
-  camera.position.y = 1.4; 
+  camera.position.y = 1.4;
   camera.lookAt(0, 0, 0);
-    
-
 
   controls.update();
   composer.render();
 }
-
 init();
 
 animate();
