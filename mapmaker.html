@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Voxel Terrain Editor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+    :root {
+        /* === COLORS === */
+        --color-bg-body: #161415;
+        --color-bg-panel: #201d1f;
+        --color-bg-button: #292527;
+        --color-bg-hover: #3b3438;
+        --color-border: #3341552c;
+        --color-border-hover: #475569;
+        --color-border-active: #159478;
+        --color-bg-active: #159478;
+        --color-text: #ffffff;
+        --color-text-subtle: #c2c2c2;
+        --color-text-heading: #e2e8f0;
+        --color-primary: #159478;
+        --color-primary-hover: #1fad8a;
+        --color-success: #2ea162;
+        --color-success-hover: #15803d;
+        --color-danger: #dc2626;
+        --color-danger-hover: #b91c1c;
+
+        /* === SPACING & LAYOUT === */
+        --spacing-xs: 0.25rem;
+        --spacing-sm: 0.5rem;
+        --spacing-md: 0.75rem;
+        --spacing-lg: 1rem;
+        --spacing-xl: 1.5rem;
+
+        /* === BORDERS & RADIUS === */
+        --border-width: 0px;
+        --border-width-thick: 1px;
+        --border-radius: 0.5rem;
+
+        /* === FONTS === */
+        --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        --font-size-sm: 0.875rem;
+        --font-size-md: 1rem;
+        --font-size-lg: 1.25rem;
+
+        /* === CANVAS GRID === */
+        --canvas-grid-color: #1e293b;
+        --canvas-grid-size: 20px;
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: var(--font-family);
+        background: var(--color-bg-body);
+        color: var(--color-text);
+        overflow: hidden;
+    }
+
+    .container {
+        display: grid;
+        grid-template-columns: 300px 1fr 460px;
+        height: 100vh;
+        gap: var(--spacing-lg);
+        padding: var(--spacing-lg);
+    }
+
+    .panel {
+        background: var(--color-bg-panel);
+        border: var(--border-width) solid var(--color-border);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-xl);
+        overflow-y: auto;
+    }
+
+    .panel h2 {
+        font-size: var(--font-size-lg);
+        margin-bottom: var(--spacing-lg);
+        color: var(--color-text-heading);
+    }
+
+    .tool-group {
+        margin-bottom: var(--spacing-sm);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .tool-group h3 {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-subtle);
+        margin-bottom: var(--spacing-md);
+        text-transform: uppercase;
+        width: 100%;
+    }
+
+    .tool-btn {
+        width: 32%;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-sm);
+        border: var(--border-width-thick) solid var(--color-border);
+        border-radius: var(--border-radius);
+        background: var(--color-bg-button);
+        color: var(--color-text);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: var(--font-size-sm);
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .tool-btn:hover {
+        border-color: var(--color-border-hover);
+        background: var(--color-bg-hover);
+    }
+
+    .tool-btn.active {
+        border-color: var(--color-border-active);
+        background: var(--color-bg-active);
+    }
+
+    .color-picker {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .color-option {
+        padding: var(--spacing-md);
+        border: var(--border-width-thick) solid var(--color-border);
+        border-radius: var(--border-radius);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+    }
+
+    .color-option:hover {
+        border-color: var(--color-border-hover);
+    }
+
+    .color-option.active {
+        border-color: var(--color-border-active);
+        background: var(--color-bg-active);
+    }
+
+    .color-swatch {
+        width: 2rem;
+        height: 2rem;
+        border-radius: calc(var(--border-radius) / 2);
+        border: 1px solid var(--color-border-hover);
+    }
+
+    .canvas-container {
+        background-color: var(--color-bg-body);
+        border-radius: var(--border-radius);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    #paintCanvas {
+        border: var(--border-width-thick) solid var(--color-border);
+        cursor: crosshair;
+        image-rendering: pixelated;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: crisp-edges;
+    }
+
+    #viewer3D {
+        width: 100%;
+        height: 100%;
+        margin-bottom: 1em;
+        border-radius: var(--border-radius);
+    }
+
+    .slider-group {
+        margin-bottom: var(--spacing-sm);
+        width: 100%;
+    }
+
+    .slider-group label {
+        display: block;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-subtle);
+        margin-bottom: 0.1rem;
+    }
+
+    .slider {
+        width: 100%;
+        height: 0.5rem;
+        border-radius: calc(var(--border-radius) / 2);
+        background: var(--color-bg-body);
+        outline: none;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 50%;
+        background: var(--color-border-active);
+        cursor: pointer;
+    }
+
+    .slider::-moz-range-thumb {
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 50%;
+        background: var(--color-border-active);
+        cursor: pointer;
+        border: none;
+    }
+
+    .btn {
+        width: 100%;
+        padding: var(--spacing-md);
+        border: none;
+        border-radius: var(--border-radius);
+        font-size: var(--font-size-sm);
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .btn-primary {
+        background: var(--color-primary);
+        color: var(--color-text);
+    }
+
+    .btn-primary:hover {
+        background: var(--color-primary-hover);
+    }
+
+    .btn-success {
+        background: var(--color-success);
+        color: var(--color-text);
+    }
+
+    .btn-success:hover {
+        background: var(--color-success-hover);
+    }
+
+    .btn-danger {
+        background: var(--color-danger);
+        color: var(--color-text);
+    }
+
+    .btn-danger:hover {
+        background: var(--color-danger-hover);
+    }
+
+    .stats {
+        background: var(--color-bg-body);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-lg);
+        margin-bottom: var(--spacing-lg);
+        font-size: var(--font-size-sm);
+    }
+
+    .stats-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .canvas-size-display {
+        text-align: center;
+        margin-top: var(--spacing-sm);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-subtle);
+    }
+
+    .panel2 {
+        background: var(--color-bg-panel);
+        border: var(--border-width) solid var(--color-border);
+        border-radius: var(--border-radius);
+        padding: var(--spacing-xl);
+        top: 0;
+        right: 0;
+        height: 100%;
+        width: 460px;
+    }
+
+    .panel2 #viewer3D{
+        width: 100%;
+        height: 400px;
+    }
+
+    #redoBtn,
+    #undoBtn {
+        width: 49%;
+    }
+</style>
+
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel: Tools -->
+        <div class="panel">
+            <h2>Tools</h2>
+            
+            <div class="tool-group">
+                <h3>Brush Type</h3>
+                <button class="tool-btn active" data-tool="paint">✎ Paint</button>
+                <button class="tool-btn" data-tool="erase">✘ Erase</button>
+                <button class="tool-btn" data-tool="fill">▨ Fill</button>
+                <button class="tool-btn" data-tool="recolor">🎨 Recolor</button>
+            </div>
+
+            <div class="tool-group">
+                <div class="slider-group">
+                    <label>Brush Size: <span id="brushSizeValue">1</span></label>
+                    <input type="range" class="slider" id="brushSize" min="1" max="10" value="1">
+                </div>
+                <div class="slider-group">
+                    <label>Height: <span id="heightValue">1</span></label>
+                    <input type="range" class="slider" id="heightSlider" min="0" max="24" value="1">
+                </div>
+            </div>
+
+            <div class="tool-group">
+                <h3>Block Type</h3>
+                <div class="color-picker">
+                    <div class="color-option active" data-color="grass">
+                        <div class="color-swatch" style="background: #22c55e;"></div>
+                        <span>Grass</span>
+                    </div>
+                    <div class="color-option" data-color="dirt">
+                        <div class="color-swatch" style="background: #92400e;"></div>
+                        <span>Dirt</span>
+                    </div>
+                    <div class="color-option" data-color="stone">
+                        <div class="color-swatch" style="background: #e5e7eb;"></div>
+                        <span>Sand</span>
+                    </div>
+                    <div class="color-option" data-color="slate">
+                        <div class="color-swatch" style="background: #3b82f6;"></div>
+                        <span>Slate</span>
+                    </div>
+                    <div class="color-option" data-color="custom">
+                        <input type="color" id="customColorPicker" value="#ff00ff" style="width: 2rem; height: 2rem; border-radius: calc(var(--border-radius) / 2); border: 1px solid var(--color-border-hover); cursor: pointer;">
+                        <span>Custom</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tool-group">
+                  <h3>MISC</h3>
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                <input type="file" id="jsonUpload" accept=".json,application/json" style="display: none;">
+                <button class="btn btn-primary" id="importBtn">Import Image</button>
+                <button class="btn btn-primary" id="importJsonBtn">Import JSON</button>
+                <button class="btn btn-primary" id="undoBtn">↶ Undo</button>
+                <button class="btn btn-primary" id="redoBtn">↷ Redo</button>
+                <button class="btn btn-danger" id="clearBtn">Clear Canvas</button>
+            </div>
+        </div>
+
+        <!-- Center: Canvas -->
+        <div class="canvas-container">
+            <canvas id="paintCanvas" width="120" height="80"></canvas>
+            <div class="canvas-size-display">120 × 80 pixels</div>
+        </div>
+
+        <div class="panel2">
+            <div id="viewer3D"></div>
+            <button class="btn btn-success" id="generateBtn">Generate 3D</button>
+            
+            <div class="stats">
+                <div class="stats-row">
+                    <span>Grass:</span>
+                    <span id="grassCount">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>Dirt:</span>
+                    <span id="dirtCount">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>Stone:</span>
+                    <span id="stoneCount">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>Slate:</span>
+                    <span id="slateCount">0</span>
+                </div>
+                <div class="stats-row">
+                    <span>Custom:</span>
+                    <span id="customCount">0</span>
+                </div>
+                <div class="stats-row" style="border-top: 1px solid #3341556b; margin-top: 0.5rem; padding-top: 0.5rem;">
+                    <strong>Total Blocks:</strong>
+                    <strong id="totalCount">0</strong>
+                </div>
+            </div>
+            
+            <button class="btn btn-success" id="downloadBtn">Download JSON</button>
+            <button class="btn btn-primary" id="downloadCodeBtn">Download Code</button>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const CANVAS_WIDTH = 120;
+        const CANVAS_HEIGHT = 80;
+        const PIXEL_SCALE = 6;
+        
+        canvas.style.width = (CANVAS_WIDTH * PIXEL_SCALE) + 'px';
+        canvas.style.height = (CANVAS_HEIGHT * PIXEL_SCALE) + 'px';
+
+        // State
+        let currentTool = 'paint';
+        let currentColor = 'grass';
+        let brushSize = 1;
+        let heightValue = 1;
+        let isDrawing = false;
+        let heightmapData = Array(CANVAS_HEIGHT).fill(null).map(() => Array(CANVAS_WIDTH).fill(0));
+        let blockTypeMap = new Map();
+        
+        // Undo/Redo stacks
+        let undoStack = [];
+        let redoStack = [];
+        const MAX_HISTORY = 30;
+
+        // Color mapping
+        const colorMap = {
+            grass: { r: 0, g: 255, b: 0 },
+            dirt: { r: 146, g: 64, b: 14 },
+            stone: { r: 255, g: 255, b: 255 },
+            slate: { r: 0, g: 0, b: 255 },
+            custom: { r: 255, g: 0, b: 255 }
+        };
+
+        // Three.js setup
+        let scene, camera, renderer, mesh;
+
+        function init3D() {
+            const container = document.getElementById('viewer3D');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(60, 50, 60);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(50, 100, 50);
+            scene.add(dirLight);
+            
+            const gridHelper = new THREE.GridHelper(100, 20, 0x334155, 0x1e293b);
+            scene.add(gridHelper);
+            
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (mesh) {
+                mesh.rotation.y += 0.005;
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // Initialize canvas
+        function initCanvas() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        }
+
+        // Tool selection
+        document.querySelectorAll('.tool-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTool = btn.dataset.tool;
+            });
+        });
+
+        // Color selection
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.addEventListener('click', () => {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                currentColor = opt.dataset.color;
+            });
+        });
+        
+        // Custom color picker
+        document.getElementById('customColorPicker').addEventListener('input', (e) => {
+            const hex = e.target.value;
+            const r = parseInt(hex.substr(1, 2), 16);
+            const g = parseInt(hex.substr(3, 2), 16);
+            const b = parseInt(hex.substr(5, 2), 16);
+            colorMap.custom = { r, g, b };
+        });
+        
+        document.getElementById('customColorPicker').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+            e.target.closest('.color-option').classList.add('active');
+            currentColor = 'custom';
+        });
+
+        // Sliders
+        document.getElementById('brushSize').addEventListener('input', (e) => {
+            brushSize = parseInt(e.target.value);
+            document.getElementById('brushSizeValue').textContent = brushSize;
+        });
+
+        document.getElementById('heightSlider').addEventListener('input', (e) => {
+            heightValue = parseInt(e.target.value);
+            document.getElementById('heightValue').textContent = heightValue;
+        });
+
+        // Drawing
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            saveState();
+            draw(e);
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) draw(e);
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDrawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+        });
+        
+        // Keyboard shortcuts for undo/redo
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                undo();
+            } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+                e.preventDefault();
+                redo();
+            }
+        });
+
+        function getCanvasCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientX - rect.left) / PIXEL_SCALE);
+            const y = Math.floor((e.clientY - rect.top) / PIXEL_SCALE);
+            return { x, y };
+        }
+
+        function draw(e) {
+            const { x, y } = getCanvasCoords(e);
+            
+            if (currentTool === 'fill') {
+                floodFill(x, y);
+                return;
+            }
+
+            for (let dy = -Math.floor(brushSize / 2); dy <= Math.floor(brushSize / 2); dy++) {
+                for (let dx = -Math.floor(brushSize / 2); dx <= Math.floor(brushSize / 2); dx++) {
+                    const px = x + dx;
+                    const py = y + dy;
+                    
+                    if (px >= 0 && px < CANVAS_WIDTH && py >= 0 && py < CANVAS_HEIGHT) {
+                        if (currentTool === 'paint') {
+                            paintPixel(px, py, currentColor);
+                        } else if (currentTool === 'erase') {
+                            erasePixel(px, py);
+                        } else if (currentTool === 'recolor') {
+                            recolorPixel(px, py, currentColor);
+                        }
+                    }
+                }
+            }
+        }
+
+        function paintPixel(x, y, color) {
+            const rgb = colorMap[color];
+            const brightness = heightValue === 0 ? 0 : Math.max(50, 255 - (heightValue - 1) * 8);
+            ctx.fillStyle = heightValue === 0 ? '#0f172a' : `rgb(${Math.floor(rgb.r * brightness / 255)}, ${Math.floor(rgb.g * brightness / 255)}, ${Math.floor(rgb.b * brightness / 255)})`;
+            ctx.fillRect(x, y, 1, 1);
+            
+            for (let h = 0; h < 25; h++) {
+                blockTypeMap.delete(`${x},${h},${y}`);
+            }
+            
+            heightmapData[y][x] = heightValue;
+            
+            for (let h = 0; h < heightValue; h++) {
+                const key = `${x},${h},${y}`;
+                if (color === 'grass') {
+                    blockTypeMap.set(key, h >= heightValue - 1 ? 'grass' : 'dirt');
+                } else {
+                    blockTypeMap.set(key, color);
+                }
+            }
+        }
+
+        function erasePixel(x, y) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(x, y, 1, 1);
+            heightmapData[y][x] = 0;
+            
+            for (let h = 0; h < 25; h++) {
+                blockTypeMap.delete(`${x},${h},${y}`);
+            }
+        }
+        
+        function recolorPixel(x, y, color) {
+            const currentHeight = heightmapData[y][x];
+            
+            if (currentHeight === 0) return;
+            
+            const rgb = colorMap[color];
+            const brightness = Math.max(50, 255 - (currentHeight - 1) * 8);
+            ctx.fillStyle = `rgb(${Math.floor(rgb.r * brightness / 255)}, ${Math.floor(rgb.g * brightness / 255)}, ${Math.floor(rgb.b * brightness / 255)})`;
+            ctx.fillRect(x, y, 1, 1);
+            
+            for (let h = 0; h < currentHeight; h++) {
+                const key = `${x},${h},${y}`;
+                if (color === 'grass') {
+                    blockTypeMap.set(key, h >= currentHeight - 1 ? 'grass' : 'dirt');
+                } else {
+                    blockTypeMap.set(key, color);
+                }
+            }
+        }
+
+        function saveState() {
+            const state = {
+                heightmap: heightmapData.map(row => [...row]),
+                blockTypes: new Map(blockTypeMap),
+                imageData: ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+            };
+            
+            undoStack.push(state);
+            
+            if (undoStack.length > MAX_HISTORY) {
+                undoStack.shift();
+            }
+            
+            redoStack = [];
+        }
+        
+        function undo() {
+            if (undoStack.length === 0) return;
+            
+            const currentState = {
+                heightmap: heightmapData.map(row => [...row]),
+                blockTypes: new Map(blockTypeMap),
+                imageData: ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+            };
+            redoStack.push(currentState);
+            
+            if (redoStack.length > MAX_HISTORY) {
+                redoStack.shift();
+            }
+            
+            const prevState = undoStack.pop();
+            heightmapData = prevState.heightmap.map(row => [...row]);
+            blockTypeMap = new Map(prevState.blockTypes);
+            ctx.putImageData(prevState.imageData, 0, 0);
+            
+            updateStats();
+        }
+        
+        function redo() {
+            if (redoStack.length === 0) return;
+            
+            const currentState = {
+                heightmap: heightmapData.map(row => [...row]),
+                blockTypes: new Map(blockTypeMap),
+                imageData: ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+            };
+            undoStack.push(currentState);
+            
+            if (undoStack.length > MAX_HISTORY) {
+                undoStack.shift();
+            }
+            
+            const nextState = redoStack.pop();
+            heightmapData = nextState.heightmap.map(row => [...row]);
+            blockTypeMap = new Map(nextState.blockTypes);
+            ctx.putImageData(nextState.imageData, 0, 0);
+            
+            updateStats();
+        }
+        
+        function floodFill(startX, startY) {
+            saveState();
+            const imageData = ctx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            const pixels = imageData.data;
+            
+            const getPixelIndex = (x, y) => (y * CANVAS_WIDTH + x) * 4;
+            const startIdx = getPixelIndex(startX, startY);
+            const targetR = pixels[startIdx];
+            const targetG = pixels[startIdx + 1];
+            const targetB = pixels[startIdx + 2];
+            
+            const rgb = colorMap[currentColor];
+            const brightness = heightValue === 0 ? 0 : Math.max(50, 255 - (heightValue - 1) * 8);
+            const fillR = heightValue === 0 ? 15 : Math.floor(rgb.r * brightness / 255);
+            const fillG = heightValue === 0 ? 23 : Math.floor(rgb.g * brightness / 255);
+            const fillB = heightValue === 0 ? 42 : Math.floor(rgb.b * brightness / 255);
+            
+            if (targetR === fillR && targetG === fillG && targetB === fillB) return;
+            
+            const visited = new Set();
+            const stack = [[startX, startY]];
+            
+            while (stack.length > 0) {
+                const [x, y] = stack.pop();
+                const key = `${x},${y}`;
+                
+                if (x < 0 || x >= CANVAS_WIDTH || y < 0 || y >= CANVAS_HEIGHT) continue;
+                if (visited.has(key)) continue;
+                
+                const idx = getPixelIndex(x, y);
+                if (pixels[idx] !== targetR || pixels[idx + 1] !== targetG || pixels[idx + 2] !== targetB) continue;
+                
+                visited.add(key);
+                paintPixel(x, y, currentColor);
+                
+                stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+            }
+        }
+
+        function clearCanvas() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            heightmapData = Array(CANVAS_HEIGHT).fill(null).map(() => Array(CANVAS_WIDTH).fill(0));
+            blockTypeMap.clear();
+            updateStats();
+            if (mesh && scene) {
+                scene.remove(mesh);
+                mesh = null;
+            }
+        }
+
+        function updateStats() {
+            let grass = 0, dirt = 0, stone = 0, slate = 0, custom = 0;
+            
+            for (const [key, type] of blockTypeMap.entries()) {
+                if (type === 'grass') grass++;
+                else if (type === 'dirt') dirt++;
+                else if (type === 'stone') stone++;
+                else if (type === 'slate') slate++;
+                else if (type === 'custom') custom++;
+            }
+            
+            document.getElementById('grassCount').textContent = grass;
+            document.getElementById('dirtCount').textContent = dirt;
+            document.getElementById('stoneCount').textContent = stone;
+            document.getElementById('slateCount').textContent = slate;
+            document.getElementById('customCount').textContent = custom;
+            document.getElementById('totalCount').textContent = grass + dirt + stone + slate + custom;
+        }
+
+        function generateMesh() {
+            if (mesh && scene) {
+                scene.remove(mesh);
+            }
+            
+            const geometries = {
+                grass: new THREE.BufferGeometry(),
+                dirt: new THREE.BufferGeometry(),
+                stone: new THREE.BufferGeometry(),
+                slate: new THREE.BufferGeometry(),
+                custom: new THREE.BufferGeometry()
+            };
+            
+            const materials = {
+                grass: new THREE.MeshLambertMaterial({ color: 0x22c55e }),
+                dirt: new THREE.MeshLambertMaterial({ color: 0x92400e }),
+                stone: new THREE.MeshLambertMaterial({ color: 0xe5e7eb }),
+                slate: new THREE.MeshLambertMaterial({ color: 0x3b82f6 }),
+                custom: new THREE.MeshLambertMaterial({ color: 0xff00ff })
+            };
+            
+            const geoData = {
+                grass: { positions: [], indices: [], index: 0 },
+                dirt: { positions: [], indices: [], index: 0 },
+                stone: { positions: [], indices: [], index: 0 },
+                slate: { positions: [], indices: [], index: 0 },
+                custom: { positions: [], indices: [], index: 0 }
+            };
+            
+            const isSolid = (x, y, z) => {
+                if (x < 0 || z < 0 || x >= CANVAS_WIDTH || z >= CANVAS_HEIGHT || y < 0) return false;
+                return y < heightmapData[z][x];
+            };
+            
+            const addFace = (data, corners) => {
+                const base = data.index;
+                for (const [vx, vy, vz] of corners) {
+                    data.positions.push(vx, vy, vz);
+                }
+                data.indices.push(base, base + 1, base + 2, base + 2, base + 3, base);
+                data.index += 4;
+            };
+            
+            const centerX = CANVAS_WIDTH / 2;
+            const centerZ = CANVAS_HEIGHT / 2;
+            
+            for (let z = 0; z < CANVAS_HEIGHT; z++) {
+                for (let x = 0; x < CANVAS_WIDTH; x++) {
+                    const h = heightmapData[z][x];
+                    for (let y = 0; y < h; y++) {
+                        const blockType = blockTypeMap.get(`${x},${y},${z}`) || 'grass';
+                        const data = geoData[blockType];
+                        const half = 0.5;
+                        
+                        const wx = x - centerX;
+                        const wz = z - centerZ;
+                        
+                        if (!isSolid(x, y + 1, z)) {
+                            addFace(data, [
+                                [wx - half, y + half, wz + half],
+                                [wx + half, y + half, wz + half],
+                                [wx + half, y + half, wz - half],
+                                [wx - half, y + half, wz - half]
+                            ]);
+                        }
+                        
+                        if (!isSolid(x, y - 1, z)) {
+                            addFace(data, [
+                                [wx - half, y - half, wz - half],
+                                [wx + half, y - half, wz - half],
+                                [wx + half, y - half, wz + half],
+                                [wx - half, y - half, wz + half]
+                            ]);
+                        }
+                        
+                        if (!isSolid(x + 1, y, z)) {
+                            addFace(data, [
+                                [wx + half, y - half, wz - half],
+                                [wx + half, y + half, wz - half],
+                                [wx + half, y + half, wz + half],
+                                [wx + half, y - half, wz + half]
+                            ]);
+                        }
+                        
+                        if (!isSolid(x - 1, y, z)) {
+                            addFace(data, [
+                                [wx - half, y - half, wz + half],
+                                [wx - half, y + half, wz + half],
+                                [wx - half, y + half, wz - half],
+                                [wx - half, y - half, wz - half]
+                            ]);
+                        }
+                        
+                        if (!isSolid(x, y, z + 1)) {
+                            addFace(data, [
+                                [wx + half, y - half, wz + half],
+                                [wx + half, y + half, wz + half],
+                                [wx - half, y + half, wz + half],
+                                [wx - half, y - half, wz + half]
+                            ]);
+                        }
+                        
+                        if (!isSolid(x, y, z - 1)) {
+                            addFace(data, [
+                                [wx - half, y - half, wz - half],
+                                [wx - half, y + half, wz - half],
+                                [wx + half, y + half, wz - half],
+                                [wx + half, y - half, wz - half]
+                            ]);
+                        }
+                    }
+                }
+            }
+            
+            mesh = new THREE.Group();
+            
+            for (const [type, data] of Object.entries(geoData)) {
+                if (data.positions.length > 0) {
+                    geometries[type].setAttribute('position', new THREE.Float32BufferAttribute(data.positions, 3));
+                    geometries[type].setIndex(data.indices);
+                    geometries[type].computeVertexNormals();
+                    
+                    if (type === 'custom') {
+                        const rgb = colorMap.custom;
+                        materials.custom.color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
+                    }
+                    
+                    const subMesh = new THREE.Mesh(geometries[type], materials[type]);
+                    mesh.add(subMesh);
+                }
+            }
+            
+            scene.add(mesh);
+            
+            updateStats();
+        }
+
+        function downloadData() {
+            const data = {
+                heightmap: heightmapData,
+                blockTypeMap: Array.from(blockTypeMap.entries()),
+                width: CANVAS_WIDTH,
+                depth: CANVAS_HEIGHT
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'voxel-terrain.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCode() {
+            const code = `// Generated voxel terrain data
+const heightmapData = ${JSON.stringify(heightmapData)};
+const blockTypeMap = new Map(${JSON.stringify(Array.from(blockTypeMap.entries()))});
+
+// Mesh generation code ready to use!
+console.log('Width:', ${CANVAS_WIDTH});
+console.log('Depth:', ${CANVAS_HEIGHT});
+console.log('Total blocks:', blockTypeMap.size);`;
+            
+            const blob = new Blob([code], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'terrain-data.js';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importImage() {
+            const input = document.getElementById('imageUpload');
+            const file = input.files[0];
+            if (!file) return;
+
+            saveState();
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    initCanvas();
+                    heightmapData = Array(CANVAS_HEIGHT).fill(null).map(() => Array(CANVAS_WIDTH).fill(0));
+                    blockTypeMap.clear();
+                    
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = CANVAS_WIDTH;
+                    tempCanvas.height = CANVAS_HEIGHT;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    tempCtx.drawImage(img, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                    const imageData = tempCtx.getImageData(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                    const pixels = imageData.data;
+                    
+                    const findExactColorMatch = (r, g, b) => {
+                        if (r === 0 && g === 255 && b === 0) return 'grass';
+                        if (r === 146 && g === 64 && b === 14) return 'dirt';
+                        if (r === 255 && g === 255 && b === 255) return 'stone';
+                        if (r === 0 && g === 0 && b === 255) return 'slate';
+                        return null;
+                    };
+                    
+                    const getHeightFromBrightness = (r, g, b) => {
+                        const brightness = (r + g + b) / 3;
+                        const height = Math.max(1, Math.min(24, Math.round(1 + (255 - brightness) / 255 * 23)));
+                        return height;
+                    };
+                    
+                    for (let y = 0; y < CANVAS_HEIGHT; y++) {
+                        for (let x = 0; x < CANVAS_WIDTH; x++) {
+                            const idx = (y * CANVAS_WIDTH + x) * 4;
+                            const r = pixels[idx];
+                            const g = pixels[idx + 1];
+                            const b = pixels[idx + 2];
+                            const a = pixels[idx + 3];
+                            
+                            if (a < 128) continue;
+                            
+                            const blockType = findExactColorMatch(r, g, b);
+                            
+                            if (!blockType) continue;
+                            
+                            const height = getHeightFromBrightness(r, g, b);
+                            
+                            const rgb = colorMap[blockType];
+                            const pixelBrightness = Math.max(50, 255 - (height - 1) * 8);
+                            ctx.fillStyle = `rgb(${Math.floor(rgb.r * pixelBrightness / 255)}, ${Math.floor(rgb.g * pixelBrightness / 255)}, ${Math.floor(rgb.b * pixelBrightness / 255)})`;
+                            ctx.fillRect(x, y, 1, 1);
+                            
+                            heightmapData[y][x] = height;
+                            
+                            for (let h = 0; h < height; h++) {
+                                const key = `${x},${h},${y}`;
+                                if (blockType === 'grass') {
+                                    blockTypeMap.set(key, h === height - 1 ? 'grass' : 'dirt');
+                                } else {
+                                    blockTypeMap.set(key, blockType);
+                                }
+                            }
+                        }
+                    }
+                    
+                    updateStats();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+            
+            input.value = '';
+        }
+
+        function importJSON() {
+            const input = document.getElementById('jsonUpload');
+            const file = input.files[0];
+            if (!file) return;
+
+            saveState();
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (!data.heightmap || !data.blockTypeMap || !data.width || !data.depth) {
+                        alert('Invalid JSON format. Expected heightmap, blockTypeMap, width, and depth.');
+                        return;
+                    }
+                    
+                    if (data.width !== CANVAS_WIDTH || data.depth !== CANVAS_HEIGHT) {
+                        alert(`JSON dimensions (${data.width}x${data.depth}) don't match canvas size (${CANVAS_WIDTH}x${CANVAS_HEIGHT})`);
+                        return;
+                    }
+                    
+                    initCanvas();
+                    
+                    heightmapData = data.heightmap.map(row => [...row]);
+                    
+                    blockTypeMap = new Map(data.blockTypeMap);
+                    
+                    for (let y = 0; y < CANVAS_HEIGHT; y++) {
+                        for (let x = 0; x < CANVAS_WIDTH; x++) {
+                            const height = heightmapData[y][x];
+                            
+                            if (height === 0) continue;
+                            
+                            const topBlockKey = `${x},${height - 1},${y}`;
+                            let blockType = blockTypeMap.get(topBlockKey) || 'grass';
+                            
+                            const rgb = colorMap[blockType];
+                            const pixelBrightness = Math.max(50, 255 - (height - 1) * 8);
+                            ctx.fillStyle = `rgb(${Math.floor(rgb.r * pixelBrightness / 255)}, ${Math.floor(rgb.g * pixelBrightness / 255)}, ${Math.floor(rgb.b * pixelBrightness / 255)})`;
+                            ctx.fillRect(x, y, 1, 1);
+                        }
+                    }
+                    
+                    updateStats();
+                    console.log('JSON imported successfully!');
+                    
+                } catch (error) {
+                    console.error('Error parsing JSON:', error);
+                    alert('Error loading JSON file. Please check the file format.');
+                }
+            };
+            reader.readAsText(file);
+            
+            input.value = '';
+        }
+
+        // Event listeners
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('imageUpload').click();
+        });
+        
+        document.getElementById('importJsonBtn').addEventListener('click', () => {
+            document.getElementById('jsonUpload').click();
+        });
+        
+        document.getElementById('imageUpload').addEventListener('change', importImage);
+        document.getElementById('jsonUpload').addEventListener('change', importJSON);
+        document.getElementById('undoBtn').addEventListener('click', undo);
+        document.getElementById('redoBtn').addEventListener('click', redo);
+        document.getElementById('clearBtn').addEventListener('click', clearCanvas);
+        document.getElementById('generateBtn').addEventListener('click', generateMesh);
+        document.getElementById('downloadBtn').addEventListener('click', downloadData);
+        document.getElementById('downloadCodeBtn').addEventListener('click', downloadCode);
+
+        // Initialize everything
+        initCanvas();
+        init3D();
+    </script>
+</body>
+</html>
