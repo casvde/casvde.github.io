@@ -14,7 +14,7 @@
         --color-bg-hover: #3b3438;
         --color-border: #3341552c;
         --color-border-hover: #475569;
-        --color-border-active: #159478;
+        --color-border-active: #1cbd9a;
         --color-bg-active: #159478;
         --color-text: #ffffff;
         --color-text-subtle: #c2c2c2;
@@ -31,12 +31,12 @@
         --spacing-sm: 0.5rem;
         --spacing-md: 0.75rem;
         --spacing-lg: 1rem;
-        --spacing-xl: 1.5rem;
+        --spacing-xl: 0.75rem;
 
         /* === BORDERS & RADIUS === */
         --border-width: 0px;
         --border-width-thick: 1px;
-        --border-radius: 0.5rem;
+        --border-radius: 0.0rem;
 
         /* === FONTS === */
         --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -62,6 +62,10 @@
         overflow: hidden;
     }
 
+    button, .color-option{
+        box-shadow: 0px -2px 0px rgba(0, 0, 0, 0.438) inset;
+    }
+
     .container {
         display: grid;
         grid-template-columns: 300px 1fr 460px;
@@ -71,11 +75,23 @@
     }
 
     .panel {
+        position: relative;
         background: var(--color-bg-panel);
         border: var(--border-width) solid var(--color-border);
         border-radius: var(--border-radius);
         padding: var(--spacing-xl);
         overflow-y: auto;
+    }
+
+    .panel .tool-group:last-child{
+        
+        position: absolute;
+        bottom: 0;
+        left: 0;
+
+        box-sizing: border-box;
+        padding:  var(--spacing-xl);
+        margin-bottom: unset;
     }
 
     .panel h2 {
@@ -100,7 +116,7 @@
     }
 
     .tool-btn {
-        width: 32%;
+        width: 30%;
         padding: var(--spacing-md);
         margin-bottom: var(--spacing-sm);
         border: var(--border-width-thick) solid var(--color-border);
@@ -108,12 +124,14 @@
         background: var(--color-bg-button);
         color: var(--color-text);
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.1s;
         font-size: var(--font-size-sm);
         display: flex;
         align-items: center;
-        gap: var(--spacing-sm);
+        flex-direction: column;
+        gap: 1px;
     }
+    
 
     .tool-btn:hover {
         border-color: var(--color-border-hover);
@@ -286,6 +304,7 @@
     }
 
     .panel2 {
+        position: relative;
         background: var(--color-bg-panel);
         border: var(--border-width) solid var(--color-border);
         border-radius: var(--border-radius);
@@ -301,9 +320,29 @@
         height: 400px;
     }
 
+    .unre{
+        position: absolute;
+        top: var(--spacing-xl);
+        right: var(--spacing-xl);
+
+    }
+
     #redoBtn,
     #undoBtn {
-        width: 49%;
+        width:max-content;
+        padding: 8px;
+    }
+
+    .DD{
+        position: absolute;
+        bottom: 0;
+        left: 0;
+
+        width: 100%;
+
+        box-sizing: border-box;
+        padding:  var(--spacing-xl);
+        margin-bottom: unset;
     }
 </style>
 
@@ -313,13 +352,18 @@
         <!-- Left Panel: Tools -->
         <div class="panel">
             <h2>Tools</h2>
+
+            <div class="unre">
+                <button class="btn btn-primary" id="undoBtn">↶ Undo</button>
+                <button class="btn btn-primary" id="redoBtn">↷ Redo </button>
+            </div>
             
             <div class="tool-group">
                 <h3>Brush Type</h3>
-                <button class="tool-btn active" data-tool="paint">✎ Paint</button>
-                <button class="tool-btn" data-tool="erase">✘ Erase</button>
-                <button class="tool-btn" data-tool="fill">▨ Fill</button>
-                <button class="tool-btn" data-tool="recolor">🎨 Recolor</button>
+                <button class="tool-btn active" data-tool="paint"><span>▣</span> Paint</button>
+                <button class="tool-btn" data-tool="erase"><span>▢</span> Erase</button>
+                <button class="tool-btn" data-tool="fill"><span>▨</span> Fill</button>
+                <button class="tool-btn" data-tool="recolor"><span>⿻</span> Recolor</button>
             </div>
 
             <div class="tool-group">
@@ -365,8 +409,9 @@
                 <input type="file" id="jsonUpload" accept=".json,application/json" style="display: none;">
                 <button class="btn btn-primary" id="importBtn">Import Image</button>
                 <button class="btn btn-primary" id="importJsonBtn">Import JSON</button>
-                <button class="btn btn-primary" id="undoBtn">↶ Undo</button>
-                <button class="btn btn-primary" id="redoBtn">↷ Redo</button>
+
+
+
                 <button class="btn btn-danger" id="clearBtn">Clear Canvas</button>
             </div>
         </div>
@@ -408,8 +453,11 @@
                 </div>
             </div>
             
-            <button class="btn btn-success" id="downloadBtn">Download JSON</button>
-            <button class="btn btn-primary" id="downloadCodeBtn">Download Code</button>
+            <div class="DD">
+                <button class="btn btn-success" id="downloadBtn">Download JSON</button>
+                <button class="btn btn-primary" id="downloadCodeBtn">Download Code</button>
+            </div>
+
         </div>
     </div>
 
